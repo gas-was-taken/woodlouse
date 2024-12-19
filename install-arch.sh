@@ -49,7 +49,7 @@ configure_system() {
     genfstab -U /mnt >> /mnt/etc/fstab
 
     # Chrooting into installation
-    arch-chroot /mnt
+    arch-chroot /mnt /bin/bash <<"EOT"
     echo "Disabling root password"
     passwd -d root
     # Setting up clock (Europe/Paris by default)
@@ -60,11 +60,17 @@ configure_system() {
     locale-gen
     echo "Setting up hostname..."
     echo "woodlouse" > /etc/hostname
+    echo "Enabling multilib support..."
+    # Enabling multilib repo in pacman.conf
+    sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
+    sed -i 's/^#Include = \/etc\/pacman.d\/mirrorlist/Include = \/etc\/pacman.d\/mirrorlist/' /etc/pacman.conf
     pacman -Syu --noconfirm amd-ucode intel-ucode btrfs-progs e2fsprogs xfsprogs dosfstools ntfs-3g dhcpcd iwd networkmanager mesa vulkan-radeon vulkan-mesa-layers vulkan-tools xf86-video-amdgpu sof-firmware steam gamescope xorg-server libinput plasma-meta sddm kwin tlp linux-zen nano man-db man-pages base-devel grub efibootmgr bash-completion refind lutris
     echo "Installation of reFind (bootloader)"
     refind-install
-    echo "Exiting chroot"
     exit
+    echo $$
+    EOT
+
     echo "Unmounting partitions..."
     umount -R /mnt
     echo "Done!\pWe're now gonna reboot in 5 seconds."
