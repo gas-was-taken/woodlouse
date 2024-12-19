@@ -73,7 +73,8 @@ EOT
 
     echo "Unmounting partitions..."
     umount -R /mnt
-    echo "Done!\pWe're now gonna reboot in 5 seconds."
+    echo "Done!"
+    echo "We're now gonna reboot in 5 seconds."
     sleep 5
     reboot
 }
