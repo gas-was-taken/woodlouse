@@ -3,11 +3,20 @@
 set -e
 
 DISK="/dev/nvme0n1"
+BOOT_PART="${DISK}p1"
+SWAP_PART="${DISK}p2"
+ROOT_PART="${DISK}p3"
 
 formating_internal_disk() {
     echo "Unmounting any existing partitions..."
-    umount ${DISK}* 2>/dev/null
-
+    # Check if any partitions on the disk are mounted
+    if mount | grep -q "${DISK}"; then
+        # If mounted, unmount the partitions
+        echo "Unmounting partitions on ${DISK}..."
+        umount ${DISK}* 2>/dev/null
+    else
+        echo "No partitions are mounted on ${DISK}."
+    fi
     echo "Creating partitions on $DISK..."
     sgdisk -Z "$DISK" # Zap the disk (wipe GPT and MBR)
     sgdisk -o "$DISK" # Create a new GPT partition table
@@ -16,23 +25,24 @@ formating_internal_disk() {
     sgdisk -n 3:0:0 -t 3:8300 -c 3:"Linux Root" "$DISK" # Root Partition (remaining space)
 
     echo "Formatting partitions..."
-    mkfs.fat -F32 "${DISK}p1" 	# EFI System Partition
-    mkswap "${DISK}p2" 		# Swap Partition
-    mkfs.ext4 "${DISK}p3"	# Root Partition
+    mkfs.fat -F32 "${BOOT_PART}"        # EFI System Partition
+    mkswap "${SWAP_PART}"               # Swap Partition
+    mkfs.ext4 "${ROOT_PART}"            # Root Partition
 
     echo "Mounting partitions..."
-    mount "${DISK}p3" /mnt
-    mount --mkdir "${DISK}p1" /mnt/boot
+    mount "${ROOT_PART}" /mnt
+    mount --mkdir "${BOOT_PART}" /mnt/boot
 
     echo "Enabling swap..."
-    swapon "${DISK}p2"
+    swapon "${SWAP_PART}"
 
     echo "Partitioning and formatting complete. Layout:"
     lsblk "$DISK"
 }
 
 installing_essential_packages() {
-    pacstrap -K /mnt base linux linux-firmware amd-ucode intel-ucode btrfs-progs e2fsprogs xfsprogs dosfstools ntfs-3g dhcpcd iwd networkmanager mesa vulkan-radeon vulkan-mesa-layers vulkan-tools xf86-video-amdgpu sof-firmware steam gamescope xorg-server libinput plasma-meta sddm kwin tlp linux-zen nano man-db man-pages base-devel grub efibootmgr bash-completion refind
+#    pacstrap -K /mnt base linux linux-firmware amd-ucode intel-ucode btrfs-progs e2fsprogs xfsprogs dosfstools ntfs-3g dhcpcd iwd networkmanager mesa vulkan-radeon vulkan-mesa-layers vulkan-tools xf86-video-amdgpu sof-firmware steam gamescope xorg-server libinput plasma-meta sddm kwin tlp linux-zen nano man-db man-pages base-devel grub efibootmgr bash-completion refind
+    pacstrap -K /mnt base linux linux-firmware
 }
 
 configure_system() {
@@ -50,6 +60,7 @@ configure_system() {
     locale-gen
     echo "Setting up hostname..."
     echo "woodlouse" > /etc/hostname
+    pacman -Syu --noconfirm amd-ucode intel-ucode btrfs-progs e2fsprogs xfsprogs dosfstools ntfs-3g dhcpcd iwd networkmanager mesa vulkan-radeon vulkan-mesa-layers vulkan-tools xf86-video-amdgpu sof-firmware steam gamescope xorg-server libinput plasma-meta sddm kwin tlp linux-zen nano man-db man-pages base-devel grub efibootmgr bash-completion refind lutris
     echo "Installation of reFind (bootloader)"
     refind-install
     echo "Exiting chroot"
@@ -62,12 +73,15 @@ configure_system() {
 }
 
 echo "Starting Arch Linux installation for SteamDeck."
-echo "\nFormating the internal disk."
-read -p "Are you sure? " -n 1 -r
-if [[ $REPLY =~ ^[Yy]$ ]]
-then
+echo "Formating the internal disk."
+echo "Press Enter to continue, or type 'n' to cancel."
+# Read user input and check if it's empty (just Enter) or 'n'/'N'
+read -r REPLY
+if [[ -z "$REPLY" || $REPLY =~ ^[Yy]$ ]]; then
     formating_internal_disk
     installing_essential_packages
     configure_system
+else
+    echo "Operation canceled."
+    exit 1
 fi
-
