@@ -51,22 +51,43 @@ configure_system() {
     arch-chroot /mnt /bin/bash <<"EOT"
     echo "Disabling root password"
     passwd -d root
+    echo "Creating user deck..."
+    useradd -m -G wheel deck
+    passwd -d deck
+    # Activer sudo pour le groupe wheel
+    echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers
+    # Réglage du clavier en français par défaut
+    echo "Setting French keyboard layout..."
+    echo "KEYMAP=fr" > /etc/vconsole.conf
     # Setting up clock (Europe/Paris by default)
     ln -sf /usr/share/zoneinfo/Europe/Paris /etc/localtime
     hwclock --systohc
+    # Locales
     echo "Generating locales..."
-    sed -i 's/^#\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
+    sed -i 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+    sed -i 's/^#fr_FR.UTF-8 UTF-8/fr_FR.UTF-8 UTF-8/' /etc/locale.gen
     locale-gen
     echo "Setting up hostname..."
     echo "woodlouse" > /etc/hostname
     echo "Enabling multilib support..."
-    # Enabling multilib repo in pacman.conf
-    sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
-    sed -i 's/^#Include = \/etc\/pacman.d\/mirrorlist/Include = \/etc\/pacman.d\/mirrorlist/' /etc/pacman.conf
-    pacman -Syu --noconfirm amd-ucode intel-ucode btrfs-progs e2fsprogs xfsprogs dosfstools ntfs-3g dhcpcd iwd networkmanager mesa vulkan-radeon vulkan-mesa-layers vulkan-tools xf86-video-amdgpu sof-firmware steam gamescope xorg-server libinput plasma-meta sddm kwin tlp linux-zen nano man-db man-pages base-devel grub efibootmgr bash-completion grub efibootmgr lutris
-    echo "Installation of reFind (bootloader)"
+    # Activation de multilib
+    echo "Enabling multilib repository in pacman.conf..."
+    sed -i '/^\[multilib\]$/,/^Include/{s/^#//}' /etc/pacman.conf
+    pacman -Syu --noconfirm amd-ucode intel-ucode btrfs-progs e2fsprogs xfsprogs dosfstools ntfs-3g dhcpcd iwd networkmanager mesa vulkan-radeon vulkan-mesa-layers vulkan-tools xf86-video-amdgpu sof-firmware steam gamescope xorg-server libinput plasma-meta sddm kwin tlp linux-zen nano man-db man-pages base-devel bash-completion grub efibootmgr lutris konsole vi
+    echo "Installing yay (AUR helper)..."
+    git clone https://aur.archlinux.org/yay.git /tmp/yay
+    cd /tmp/yay
+    makepkg -si --noconfirm
+    # Installation d'opengamepadui-bin via AUR
+    echo "Installing opengamepadui-bin (AUR)..."
+    yay -S --noconfirm opengamepadui-bin
+    echo "Installation of GRUB (bootloader)"
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
     grub-mkconfig -o /boot/grub/grub.cfg
+    # Activer dhcpcd au démarrage
+    echo "Enabling dhcpcd service..."
+    systemctl enable dhcpcd.service
+    systemctl start dhcpcd.service
     exit
     echo $$
 EOT
