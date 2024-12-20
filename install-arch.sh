@@ -74,13 +74,13 @@ configure_system() {
     echo "Enabling multilib repository in pacman.conf..."
     sed -i '/^\[multilib\]$/,/^Include/{s/^#//}' /etc/pacman.conf
     pacman -Syu --noconfirm amd-ucode intel-ucode btrfs-progs e2fsprogs xfsprogs dosfstools ntfs-3g dhcpcd iwd networkmanager mesa vulkan-radeon vulkan-mesa-layers vulkan-tools xf86-video-amdgpu sof-firmware steam gamescope xorg-server libinput plasma-meta sddm kwin tlp linux-zen nano man-db man-pages base-devel bash-completion grub efibootmgr lutris konsole vi
-    echo "Installing yay (AUR helper)..."
-    git clone https://aur.archlinux.org/yay.git /tmp/yay
-    cd /tmp/yay
-    makepkg -si --noconfirm
+    #echo "Installing yay (AUR helper)..."
+    #git clone https://aur.archlinux.org/yay.git /tmp/yay
+    #cd /tmp/yay
+    #makepkg -si --noconfirm
     # Installation d'opengamepadui-bin via AUR
-    echo "Installing opengamepadui-bin (AUR)..."
-    yay -S --noconfirm opengamepadui-bin
+    #echo "Installing opengamepadui-bin (AUR)..."
+    #yay -S --noconfirm opengamepadui-bin
     echo "Installation of GRUB (bootloader)"
     grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
     grub-mkconfig -o /boot/grub/grub.cfg
