@@ -41,7 +41,7 @@ formating_internal_disk() {
 }
 
 installing_essential_packages() {
-    pacstrap -K /mnt base linux linux-firmware
+    pacstrap -K /mnt base linux-zen linux-firmware
 }
 
 configure_system() {
@@ -69,10 +69,9 @@ configure_system() {
     locale-gen
     echo "Setting up hostname..."
     echo "woodlouse" > /etc/hostname
-    echo "Enabling multilib support..."
-    # Activation de multilib
     echo "Enabling multilib repository in pacman.conf..."
-    sed -i '/^\[multilib\]$/,/^Include/{s/^#//}' /etc/pacman.conf
+    sed -i 's/^#\[multilib\]/[multilib]/' /etc/pacman.conf
+    sed -i '/^\[multilib\]/{n;s/^#//}' /etc/pacman.conf
     pacman -Syu --noconfirm amd-ucode intel-ucode btrfs-progs e2fsprogs xfsprogs dosfstools ntfs-3g dhcpcd iwd networkmanager mesa vulkan-radeon vulkan-mesa-layers vulkan-tools xf86-video-amdgpu sof-firmware steam gamescope xorg-server libinput plasma-meta sddm kwin tlp linux-zen nano man-db man-pages base-devel bash-completion grub efibootmgr lutris konsole vi
     #echo "Installing yay (AUR helper)..."
     #git clone https://aur.archlinux.org/yay.git /tmp/yay
